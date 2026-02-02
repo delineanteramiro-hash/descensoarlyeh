@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Descenso a R'lyeh: El Juego de Cartas</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@400;700&display=swap');
+
+        body {
+            background-color: #050505;
+            color: #dcdcdc;
+            font-family: 'Lato', sans-serif;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            border: 2px solid #1a2f23;
+            background-color: #0b0f0b;
+            box-shadow: 0 0 20px rgba(20, 50, 20, 0.6);
+            height: 95vh;
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            padding: 10px;
+            border-bottom: 1px solid #2a4435;
+            background: linear-gradient(to bottom, #111a15, #0b0f0b);
+        }
+
+        h1 {
+            font-family: 'Cinzel', serif;
+            color: #50c878;
+            margin: 0;
+            text-shadow: 0 0 5px #006400;
+            font-size: 1.1rem;
+        }
+
+        #stats-bar {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 2px;
+            background-color: #0a0e0a;
+            border-bottom: 2px solid #1a2f23;
+            font-family: 'Cinzel', serif;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .stat-label { 
+            color: #6e8c7c; 
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value { 
+            color: #fff; 
+            font-weight: bold; 
+            font-size: 0.85rem; 
+        }
+
+        #game-log {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            background-color: #050805;
+            scroll-behavior: smooth;
+        }
+
+        .log-entry { margin-bottom: 10px; opacity: 0; animation: fadeIn 0.5s forwards; }
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        .c-red { color: #ff3333; }
+        .c-green { color: #4dff88; }
+        .c-gold { color: #ffd700; }
+        .c-blue { color: #4da6ff; }
+        .c-cyan { color: #00ffff; }
+        .c-magenta { color: #d896ff; }
+        .c-gray { color: #888; font-style: italic; }
+        .c-white { color: #fff; font-weight: bold; }
+        .big { font-size: 0.95rem; font-weight: bold; }
+        .c-secret { color: #d896ff; text-shadow: 0 0 10px #8a2be2; font-weight: bold; font-size: 0.9rem; }
+
+        #controls-area {
+            padding: 15px;
+            border-top: 1px solid #1a2f23;
+            background-color: #0e1410;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 130px; 
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s;
+        }
+
+        .btn-row { display: flex; gap: 10px; width: 100%; justify-content: center; flex-wrap: wrap; }
+        .btn-col { display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center; }
+
+        button {
+            background: #1a221d;
+            color: #dcdcdc;
+            border: 1px solid #2f4f4f;
+            padding: 10px 16px;
+            font-family: 'Cinzel', serif;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+            min-width: 110px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border-radius: 4px;
+        }
+
+        button:hover { background: #2f4f4f; border-color: #50c878; color: #fff; transform: translateY(-2px); box-shadow: 0 6px 8px rgba(0,0,0,0.5); }
+        
+        button.path-btn {
+            width: 100%;
+            max-width: 500px;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #2f4f4f;
+            padding: 10px 12px;
+            font-size: 0.85rem;
+        }
+        button.path-btn:hover { border-left-color: #50c878; }
+
+        button.class-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 4px;
+            padding: 10px;
+            width: 140px;
+            font-size: 0.85rem;
+        }
+        .btn-desc { font-size: 0.65rem; color: #aaa; font-family: 'Lato', sans-serif; line-height: 1.2; }
+
+        button.action-btn { border-color: #b8860b; color: #ffcc00; background: #2a2200; }
+        button.action-btn:hover { background: #3d3200; }
+        
+        button.continue-btn { 
+            border-color: #008800; 
+            color: #ccffcc; 
+            background: #002200; 
+            width: 100%; 
+            max-width: 300px;
+            font-size: 0.95rem;
+            animation: pulse 2s infinite;
+        }
+        button.continue-btn:hover { background: #003300; animation: none; }
+        
+        button.item-btn { border-color: #00aaaa; color: #00ffff; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 100, 0, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 100, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 100, 0, 0); }
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #1a2f23; }
+        ::-webkit-scrollbar-thumb:hover { background: #50c878; }
+
+        @media (max-width: 600px) {
+            body { padding: 5px; }
+            h1 { font-size: 1rem; }
+            #stats-bar { padding: 8px 2px; }
+            .stat-label { font-size: 0.55rem; }
+            .stat-value { font-size: 0.8rem; }
+            button { padding: 8px 12px; font-size: 0.8rem; min-width: 90px; }
+            button.class-btn { width: 46%; }
+            #game-log { padding: 10px; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <header>
+        <h1>DESCENSO A R'LYEH</h1>
+        <div style="font-size: 0.75rem; color: #6e8c7c; margin-top:5px;">MITOS DE CTHULHU EDITION - versión 1.0</div>
+        <div style="font-size: 0.7rem; color: #444; margin-top:5px;">Un juego diseñado por: RAMIRO LUIS ÁLVAREZ MORENO</div>
+    </header>
+
+    <div id="stats-bar">
+        <div class="stat-item">
+            <span class="stat-label">Cordura</span>
+            <span id="ui-lives" class="stat-value c-green">2</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Protección</span>
+            <span id="ui-armor" class="stat-value c-blue">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Pistas</span>
+            <span id="ui-souls" class="stat-value c-cyan">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Investigador</span>
+            <span id="ui-class" class="stat-value">Nadie</span>
+        </div>
+    </div>
+
+    <div id="game-log"></div>
+
+    <div id="controls-area"></div>
+</div>
+
+<script>
+    // --- LÓGICA DEL JUEGO CORREGIDA ---
+
+    const NOMBRES_PALOS_PUROS = {
+        'C': 'Signos (Cordura)',
+        'D': 'Pentáculos (Codicia)',
+        'T': 'Tentáculos (Terror)',
+        'P': 'Sangre (Adrenalina)'
+    };
+
+    // CORRECCIÓN: Uso de comillas invertidas (backticks) para permitir textos en varias líneas
+    const TEXTOS_EFECTOS = {
+        'C': `<span class="c-green">Efecto [SIGNO]: Encuentras un símbolo arcano mayor.
+Recuperas el aliento y sientes que estás más cerca de tu objetivo.</span>`,
+        'D': `<span class="c-cyan">Efecto [PENTÁCULO]: Obsesión.
+Investigas tanto que necesitas indagar en una nueva localización.</span>`,
+        'T': `<span class="c-magenta">Efecto [TENTÁCULO]: Terror puro.
+Te tiemblan las manos y no estas seguro de que harás todo bien hasta que te calmes (Siguiente tirada -1).</span>`,
+        'P': `<span class="c-red">Efecto [SANGRE]: Adrenalina de supervivencia.
+Te sientes con fuerzas renovadas para afrontar el siguiente reto (Siguiente tirada +1).</span>`
+    };
+
+    const LOCALIZACIONES = [
+        {n: "Universidad de Miskatonic", d: "Libros prohibidos y susurros en la biblioteca."},
+        {n: "Manicomio de Arkham", d: "Gritos y lloros en la noche. Las paredes están arañadas y llenas de garabatos."},
+        {n: "El Puerto de Innsmouth", d: "Olor a pescado podrido y habitantes con mirada vidriosa observan desde las sombras."},
+        {n: "Dunwich", d: "Colinas silenciosas donde algo invisible camina."},
+        {n: "Las Montañas de la Locura", d: "Vientos helados y ruinas de una civilización prehumana."},
+        {n: "La Ciudad sin Nombre", d: "Ruinas bajo la arena del desierto arábigo."},
+        {n: "La Meseta de Leng", d: "Un páramo frío habitado por seres de pesadilla."},
+        {n: "Yuggoth", d: "El planeta de los hongos, en el borde oscuro del sistema."},
+        {n: "R'lyeh", d: "Geometría no euclidiana bajo el mar. Él duerme aquí."},
+        {n: "Celephaïs", d: "Una ciudad onírica en las Tierras del Sueño, donde el tiempo no existe."},
+        {n: "Carcosa", d: `Soles gemelos se ponen sobre el lago Hali.
+La locura viste de amarillo.`},
+        {n: "El Bosque de N'kai", d: "Cavernas subterráneas donde reina la oscuridad eterna de Tsathoggua."},
+        {n: "Torre solitaria en el Mar de Cristal", d: `Un faro de silencio sobre aguas transparentes e inmóviles.
+El horizonte es un espejo de tu alma.`}
+    ];
+
+    // CORRECCIÓN: Arreglado N'kai (comilla doble) y saltos de línea
+    const NOMBRES_JEFES = {
+        'P': {'J': 'Mi-Go, el hongo', 'Q': 'Shoggoth', 'K': 'Yog-Sothoth, la puerta y la llave', 'A': 'Azathoth, uno por encima de todos'},
+        'C': {'J': 'Profundo', 'Q': 'Madre Hidra', 'K': 'Padre Dagón, señor de las profundidades', 'A': 'Cthulhu, el soñador'},
+        'T': {'J': 'Semilla informe', 'Q': "Tsathoggua, el durmiente de N'kai", 'K': 'Hastur, el innombrable', 'A': `Shub-Niggurath, la cabra negra con un millar
+de retoños`},
+        'D': {'J': 'Gul necrófago', 'Q': 'El Rey de Amarillo', 'K': 'Ithaqua, el que camina por el viento', 'A': 'Nyarlathotep, el caos reptante'}
+    };
+
+    const CLASES = {
+        1: {nombre: "VETERANO", desc: `Ignora Sangre/Cósmico.
+1 Disparo (+5) por Jefe.`, id: "guerrero"},
+        2: {nombre: "OCULTISTA", desc: "Puede transmutar 1 carta por nivel.", id: "hechicero"},
+        3: {nombre: "DETECTIVE", desc: "Suerte: El primer fallo de cada fase no quita cordura.", id: "picaro"},
+        4: {nombre: "PSIQUIATRA", desc: `Inicia con Protección.
+Ignora Terror (Tentáculos).`, id: "clerigo"},
+        5: {nombre: "DESQUICIADO", desc: `Sin ventajas.
+Ya has visto demasiado.`, id: "hueco"}
+    };
+
+    let state = {
+        vidas: 2, armadura: 0, almas: [], bonoTirada: 0, clase: null,
+        habilidadUsada: false, habilidadGuerreroUsada: false, falloGratisUsado: false,
+        dificultad: 6, jefesDerrotados: 0, mazoAventura: [], mazoJefes: [], mazoLoc: [],
+        descartesCamino: [], pruebasRestantes: 0, cartasActuales: [], jefeActual: null,
+        vidaJefe: 0, colaAtaquesJefe: []
+    };
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    function log(html) {
+        const div = document.createElement('div');
+        div.className = 'log-entry';
+        div.innerHTML = html;
+        const logContainer = document.getElementById('game-log');
+        logContainer.appendChild(div);
+        logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    function updateStats() {
+        let corduraText = "Estable";
+        let corduraColor = "c-green";
+        if (state.vidas === 1) { corduraText = "Perturbado"; corduraColor = "c-gold"; }
+        if (state.vidas <= 0) { corduraText = "Locura"; corduraColor = "c-red"; }
+
+        document.getElementById('ui-lives').innerHTML = `${state.vidas} <div style='font-size:0.6em; font-weight:normal;'>${corduraText}</div>`;
+        document.getElementById('ui-lives').className = `stat-value ${corduraColor}`;
+        document.getElementById('ui-armor').innerText = state.armadura;
+        document.getElementById('ui-souls').innerText = state.almas.length;
+        document.getElementById('ui-class').innerText = state.clase ? state.clase.nombre : "Nadie";
+    }
+
+    function clearControls() {
+        document.getElementById('controls-area').innerHTML = '';
+    }
+
+    function waitForContinue(text, callback) {
+        clearControls();
+        const row = document.createElement('div');
+        row.className = 'btn-row';
+        document.getElementById('controls-area').appendChild(row);
+
+        const btn = document.createElement('button');
+        btn.innerText = text;
+        btn.className = "continue-btn";
+        btn.onclick = callback;
+        row.appendChild(btn);
+    }
+
+    function restartGame() {
+        state = {
+            vidas: 2, armadura: 0, almas: [], bonoTirada: 0, clase: null,
+            habilidadUsada: false, habilidadGuerreroUsada: false, falloGratisUsado: false,
+            dificultad: 6, jefesDerrotados: 0, mazoAventura: [], mazoJefes: [], mazoLoc: [],
+            descartesCamino: [], pruebasRestantes: 0, cartasActuales: [], jefeActual: null,
+            vidaJefe: 0, colaAtaquesJefe: []
+        };
+        document.getElementById('game-log').innerHTML = '';
+        updateStats();
+        clearControls();
+        initGame();
+    }
+
+    function initGame() {
+        log(`<div class="c-gold" style="text-align:center">DESCENSO A R'LYEH</div>`);
+        log(`<div class="c-gray">Te despiertas en una celda acolchada con las paredes llenas de runas arcanas escritas con sangre. No recuerdas tu nombre ni cómo has acabado aquí, pero sabes que algo antiguo se está despertando bajo el mar...</div>`);
+        log(`<br><span class="c-white big">CÓMO SOBREVIVIR:</span>`);
+        log(`1. <span class="c-gold">Investigación:</span> Elige tu camino. Las cartas descartadas alimentarán el poder de los Primigenios.`);
+        log(`2. <span class="c-green">Voluntad:</span> Para superar los horrores lanzarás un dado de 10 caras y sumarás y/o restaras bonus dependiendo de la situación para intentar alcanzar el valor objetivo.`);
+        log(`&nbsp;&nbsp;&nbsp;Tu mente es tu arma. Cuanta menos Cordura tengas, más difícil será mantener la concentración.`);
+        log(`&nbsp;&nbsp;&nbsp;<i>Descifra los símbolos arcanos y evita caer en la locura total.</i>`);
+        
+        waitForContinue("Elige investigador", showClassSelection);
+    }
+
+    function showClassSelection() {
+        clearControls();
+        document.getElementById('game-log').innerHTML = ''; 
+        log(`<div class="c-white big" style="text-align:center">¿CUAL ES TU PROFESIÓN?</div>`);
+        
+        const row = document.createElement('div');
+        row.className = 'btn-row';
+        document.getElementById('controls-area').appendChild(row);
+
+        for (let i = 1; i <= 5; i++) {
+            const c = CLASES[i];
+            const btn = document.createElement('button');
+            btn.className = 'class-btn';
+            btn.innerHTML = `<span style="font-size:1rem; font-weight:bold">${c.nombre}</span><span class="btn-desc">${c.desc}</span>`;
+            
+            btn.onclick = () => {
+                state.clase = c;
+                if (c.id === 'clerigo') state.armadura = 1;
+                log(`<br>Has elegido ser: <span class="c-green">${c.nombre}</span>`);
+                updateStats();
+                waitForContinue("Elige dificultad", showDifficultySelection);
+            };
+            row.appendChild(btn);
+        }
+    }
+
+    function showDifficultySelection() {
+        clearControls();
+        document.getElementById('game-log').innerHTML = '';
+        log(`<div class="c-white big" style="text-align:center">¿QUÉ TIPO DE VIAJE HACIA LO DESCONOCIDO QUIERES REALIZAR?</div>`);
+
+        const col = document.createElement('div');
+        col.className = 'btn-col';
+        document.getElementById('controls-area').appendChild(col);
+
+        const difficulties = [
+            { name: "Turismo por Arkham", bosses: 3, desc: "Viaje corto" },
+            { name: "Descansar en Innsmouth", bosses: 4, desc: "Viaje normal" },
+            { name: "Explorar R´Lyeh", bosses: 5, desc: "Viaje largo" },
+            { name: "Leer Necronomicón", bosses: 6, desc: "La locura absoluta" }
+        ];
+
+        difficulties.forEach(diff => {
+            const btn = document.createElement('button');
+            btn.className = 'path-btn';
+            btn.innerHTML = `<span>${diff.name}</span> <span class="c-gray">${diff.desc}</span>`;
+            btn.onclick = () => {
+                state.dificultad = diff.bosses;
+                log(`Destino fijado: <span class="c-gold">${diff.name}</span>`);
+                prepareDecks();
+                waitForContinue("Comenzar Investigación", startLevel);
+            };
+            col.appendChild(btn);
+        });
+    }
+
+    function prepareDecks() {
+        state.mazoAventura = [];
+        const palosKeys = ['C','D','T','P'];
+        for (let p of palosKeys) {
+            for (let i = 2; i <= 10; i++) state.mazoAventura.push({v: i, p: p, esJefe: false});
+        }
+        shuffle(state.mazoAventura);
+
+        state.mazoJefes = [];
+        for (let p of palosKeys) {
+            ['J','Q','K','A'].forEach(f => state.mazoJefes.push({v: f, p: p, esJefe: true}));
+        }
+        shuffle(state.mazoJefes);
+        state.mazoLoc = [...LOCALIZACIONES];
+        shuffle(state.mazoLoc);
+    }
+
+    function getCardName(c, plainText = false) {
+        if (c.v === 'EasterEgg') {
+            if (plainText) return "Doctor Arroyo y su fiel ayudante Álvarez";
+            return `<span class="c-secret">[Doctor Arroyo y su fiel ayudante Álvarez]</span>`;
+        }
+        if (c.esJefe) {
+            let nombre = NOMBRES_JEFES[c.p][c.v] || "Entidad desconocida";
+            if (plainText) return `${nombre}`;
+            return `<span class="c-red">[${nombre}]</span>`;
+        }
+        let nombrePalo = NOMBRES_PALOS_PUROS[c.p]; 
+        if (plainText) return `${c.v} de ${nombrePalo}`;
+        let colorClass = '';
+        if (c.p === 'C') colorClass = 'c-green';
+        if (c.p === 'D') colorClass = 'c-cyan';
+        if (c.p === 'T') colorClass = 'c-magenta';
+        if (c.p === 'P') colorClass = 'c-red';
+        return `<span class="${colorClass}">[${c.v} de ${nombrePalo}]</span>`;
+    }
+
+    function getCardValue(c) {
+        if (c.v === 'EasterEgg') return -4; 
+        if (typeof c.v === 'number') return c.v;
+        if (c.v === 'J') return 0;
+        if (c.v === 'Q') return -1;
+        if (c.v === 'K') return -2;
+        if (c.v === 'A') return -3;
+        return 0;
+    }
+
+    function startLevel() {
+        if (state.jefesDerrotados >= state.dificultad) { endGame(true); return; }
+        state.habilidadUsada = false;
+        state.falloGratisUsado = false;
+        state.descartesCamino = [];
+        state.pruebasRestantes = state.jefesDerrotados + 1;
+
+        let loc = state.mazoLoc.length > 0 ? state.mazoLoc.shift() : {n:"El Vacío", d:"..."};
+        log('<hr style="border-color: #333; margin: 20px 0;">');
+        log(`<span class="c-gold big">UBICACIÓN: ${loc.n.toUpperCase()}</span>`);
+        log(`<span class="c-gray">"${loc.d}"</span>`);
+        waitForContinue("Investigar", nextPathStep);
+    }
+
+    function nextPathStep() {
+        if (state.pruebasRestantes <= 0) {
+            waitForContinue("Avanzar hacia el umbral", preBossEncounter);
+            return;
+        }
+        if (state.mazoAventura.length < 2) {
+            log('<span class="c-gray">Recopilando notas perdidas...</span>');
+            prepareDecks();
+        }
+        state.cartasActuales = [state.mazoAventura.shift(), state.mazoAventura.shift()];
+        showPathChoices();
+    }
+
+    function preBossEncounter() {
+        clearControls();
+        log('<hr style="border-color: #2a4435; margin: 20px 0;">');
+        log(`<div class="c-magenta" style="text-align:center; font-weight:bold;">EL VELO SE ROMPE</div>`);
+        log(`Has superado los peligros del camino. Sientes la presencia de una entidad esperándote.`);
+        log(`Toma un momento para respirar... si es que puedes.`);
+        waitForContinue("Adentrarse en lo desconocido", startBoss);
+    }
+
+    function showPathChoices() {
+        clearControls();
+        const c1 = state.cartasActuales[0];
+        const c2 = state.cartasActuales[1];
+        log(`<br>Localizaciones restantes: <span class="c-cyan">${state.pruebasRestantes}</span>`);
+        log(`¿Qué pista sigues?`);
+        
+        const col = document.createElement('div');
+        col.className = 'btn-col';
+        document.getElementById('controls-area').appendChild(col);
+
+        const btn1 = document.createElement('button');
+        btn1.className = 'path-btn';
+        btn1.innerHTML = `<span>OPCIÓN A:</span> ${getCardName(c1)}`;
+        btn1.onclick = () => resolveChoice(0);
+        col.appendChild(btn1);
+
+        const btn2 = document.createElement('button');
+        btn2.className = 'path-btn';
+        btn2.innerHTML = `<span>OPCIÓN B:</span> ${getCardName(c2)}`;
+        btn2.onclick = () => resolveChoice(1);
+        col.appendChild(btn2);
+
+        if (state.clase.id === 'hechicero' && !state.habilidadUsada) {
+            const btnMagic = document.createElement('button');
+            btnMagic.className = 'c-blue';
+            btnMagic.style.marginTop = "10px";
+            btnMagic.innerText = "Ritual arcano (Cambiar carta)";
+            btnMagic.onclick = () => {
+                if (state.mazoAventura.length > 0) {
+                    let nueva = state.mazoAventura.shift();
+                    log(`<span class="c-blue">¡Klaatu Verata Nikto!</span> Transformas ${getCardName(state.cartasActuales[0])} en ${getCardName(nueva)}`);
+                    state.cartasActuales[0] = nueva;
+                    state.habilidadUsada = true;
+                    showPathChoices();
+                }
+            };
+            col.appendChild(btnMagic);
+        }
+    }
+
+    function resolveChoice(indexElegida) {
+        const elegida = state.cartasActuales[indexElegida];
+        const descartada = state.cartasActuales[indexElegida === 0 ? 1 : 0];
+        state.descartesCamino.push(descartada);
+        log(`Ignoras ${getCardName(descartada)}. (La entidad se fortalece)`);
+        attemptChallenge(elegida);
+    }
+
+    function attemptChallenge(carta) {
+        clearControls();
+        const diff = getCardValue(carta);
+        log(`Dificultad Mental: <span class="c-white">${diff}</span>`);
+        showDiceButton(() => {
+            let resultado = rollDice();
+            if (resultado >= diff) {
+                log(`<span class="c-green">¡ÉXITO!</span> Mantienes la calma.`);
+                log(TEXTOS_EFECTOS[carta.p]);
+                if (carta.p === 'C') state.pruebasRestantes--;
+                if (carta.p === 'D') state.pruebasRestantes++;
+                if (carta.p === 'T') state.bonoTirada = -1;
+                if (carta.p === 'P') state.bonoTirada = 1;
+                state.pruebasRestantes--;
+                if (state.pruebasRestantes <= 0) waitForContinue("Avanzar hacia el umbral", preBossEncounter);
+                else waitForContinue("Seguir investigando", nextPathStep);
+            } else {
+                log(`<span class="c-red">FALLO.</span> Tu mente se quiebra.`);
+                takeDamage(() => waitForContinue("Recuperar la compostura", () => attemptChallenge(carta)));
+            }
+        });
+    }
+
+    function showDiceButton(callback) {
+        const row = document.createElement('div');
+        row.className = 'btn-row';
+        document.getElementById('controls-area').appendChild(row);
+
+        const btn = document.createElement('button');
+        btn.innerText = "TIRAR DADO";
+        btn.className = "action-btn";
+        btn.onclick = callback;
+        row.appendChild(btn);
+
+        if (state.almas.length > 0) {
+            const btnItem = document.createElement('button');
+            btnItem.innerText = `Usar Pista (${state.almas.length}) [+5]`;
+            btnItem.className = "item-btn";
+            btnItem.onclick = () => {
+                let alma = state.almas.pop();
+                state.bonoTirada += 5;
+                log(`Usas el conocimiento de ${alma}. <span class="c-green">+5 Bono</span>`);
+                updateStats();
+                btnItem.innerText = `Usar Pista (${state.almas.length}) [+5]`;
+                if (state.almas.length === 0) btnItem.disabled = true;
+            };
+            row.appendChild(btnItem);
+        }
+    }
+
+    function rollDice(modBoss = 0) {
+        if (state.clase.id === 'clerigo' && state.bonoTirada < 0) {
+            log(`<span class="c-blue">[PSIQUIATRA] Tu mente entrenada resiste el Terror.</span>`);
+            state.bonoTirada = 0;
+        }
+        let dado = Math.floor(Math.random() * 10) + 1;
+        let bonusPistas = state.almas.length > 0 ? 1 : 0;
+        let total = dado + state.vidas + state.bonoTirada + modBoss + bonusPistas;
+        let color = total >= 10 ? 'c-green' : (total <= 5 ? 'c-red' : 'c-white');
+        log(`🎲 Dado: ${dado} + Cordura(${state.vidas}) + Pistas(${bonusPistas}) + Bonus(${state.bonoTirada}) + Mod(${modBoss}) = <span class="${color} big">${total}</span>`);
+        if (dado === 10) { log(`<span class="c-gold">¡LUCIDEZ MOMENTÁNEA! (Crítico)</span>`); total = 999; }
+        state.bonoTirada = 0;
+        return total;
+    }
+
+    function takeDamage(callback) {
+        if (state.clase.id === 'picaro' && !state.falloGratisUsado) {
+            log(`<span class="c-green">[DETECTIVE] ¡Suerte pura! El peligro te roza pero no te toca.</span>`);
+            state.falloGratisUsado = true;
+            if (callback) callback();
+            return;
+        }
+        if (state.armadura > 0) {
+            let salvacion = Math.floor(Math.random() * 10) + 1;
+            // 70% de probabilidad de rotura (1-7 rompe, 8-10 salva)
+            if (salvacion >= 8) {
+                log(`<span class="c-blue">¡TU HECHIZO DE PROTECCIÓN RESISTE!  (Dado salvación: ${salvacion}) Un aura mágica protectora te rodea. </span>`);
+            } else {
+                state.armadura--;
+                log(`<span class="c-red">¡TU HECHIZO DE PROTECCIÓN SE HACE AÑICOS! (Dado salvación: ${salvacion}) La luz protectora se desvanece. </span>`);
+            }
+            updateStats();
+            if (callback) callback();
+            return;
+        }
+        state.vidas--;
+        updateStats();
+        log(`<span class="c-red">¡CORDURA PERDIDA!</span>`);
+        if (state.vidas < 0) endGame(false);
+        else if (callback) callback();
+    }
+
+    function startBoss() {
+        state.falloGratisUsado = false;
+        state.habilidadGuerreroUsada = false;
+        if (state.dificultad === 6 && state.jefesDerrotados === 5) {
+            state.jefeActual = { v: 'EasterEgg', p: 'P', esJefe: true }; 
+        } else {
+            state.jefeActual = state.mazoJefes.shift();
+        }
+        state.vidaJefe = state.jefesDerrotados + 1;
+        let penalizacion = getCardValue(state.jefeActual);
+        log('<hr style="border-color: #500; margin: 20px 0;">');
+        log(`<div class="c-red big" style="text-align:center;">¡LA ENTIDAD SE MANIFIESTA!</div>`);
+        log(`HORROR: ${getCardName(state.jefeActual)} | Resistencia: ${state.vidaJefe}`);
+        log(`Presión mental: ${penalizacion}`);
+        state.colaAtaquesJefe = [...state.descartesCamino];
+        while (state.colaAtaquesJefe.length < state.vidaJefe) {
+            if (state.mazoAventura.length > 0) state.colaAtaquesJefe.push(state.mazoAventura.shift());
+        }
+        bossTurn();
+    }
+
+    function bossTurn() {
+        if (state.vidaJefe <= 0) { bossDefeated(); return; }
+        if (state.colaAtaquesJefe.length === 0 && state.mazoAventura.length === 0) {
+            log("La entidad se disuelve en la oscuridad.");
+            bossDefeated();
+            return;
+        }
+        let ataque = state.colaAtaquesJefe.length > 0 ? state.colaAtaquesJefe.shift() : state.mazoAventura.shift();
+        clearControls();
+        log(`<br>⚠️ La Entidad ataca con: ${getCardName(ataque)}`);
+        const row = document.createElement('div');
+        row.className = 'btn-row';
+        document.getElementById('controls-area').appendChild(row);
+        const btnDef = document.createElement('button');
+        btnDef.innerText = "RESISTIR";
+        btnDef.className = "action-btn";
+        btnDef.onclick = () => resolveBossAttack(ataque);
+        row.appendChild(btnDef);
+        if (state.clase.id === 'guerrero' && !state.habilidadGuerreroUsada) {
+            const btnWar = document.createElement('button');
+            btnWar.innerText = "Disparo a quemarropa (+5)";
+            btnWar.className = "c-gold";
+            btnWar.onclick = () => {
+                log(`<span class="c-gold">¡BUM!</span> (Bono +5)`);
+                state.bonoTirada += 5;
+                state.habilidadGuerreroUsada = true;
+                resolveBossAttack(ataque);
+            };
+            row.appendChild(btnWar);
+        }
+        if (state.clase.id === 'hechicero' && !state.habilidadUsada) {
+            const btnMag = document.createElement('button');
+            btnMag.innerText = "Transmutar realidad";
+            btnMag.className = "c-blue";
+            btnMag.onclick = () => {
+                if (state.mazoAventura.length === 0) {
+                    log('<span class="c-gray">Recitando...</span>');
+                    const palosKeys = ['C','D','T','P'];
+                    for (let p of palosKeys) { for (let i = 2; i <= 10; i++) state.mazoAventura.push({v: i, p: p, esJefe: false}); }
+                    shuffle(state.mazoAventura);
+                }
+                let nueva = state.mazoAventura.shift();
+                log(`<span class="c-blue">¡Klaatu Verata Nikto!</span> Ataque transformado en ${getCardName(nueva)}`);
+                state.habilidadUsada = true;
+                resolveBossAttack(nueva); 
+            };
+            row.appendChild(btnMag);
+        }
+    }
+
+    function resolveBossAttack(cartaAtaque) {
+        clearControls();
+        let valorAtaque = getCardValue(cartaAtaque);
+        let modJefe = getCardValue(state.jefeActual);
+        if (state.jefeActual.p === 'P') { 
+            if (state.clase.id === 'guerrero') log(`<span class="c-gold">[VETERANO] Ignoras lo cósmico.</span>`);
+            else { log(`<span class="c-gold">[CÓSMICO] +2 Dif</span>`); valorAtaque += 2; }
+        }
+        let difTotal = valorAtaque;
+        log(`Dificultad: <span class="c-white">${difTotal}</span>`);
+        showDiceButton(() => {
+            let resultado = rollDice(modJefe);
+            if (state.jefeActual.p === 'T' && resultado >= difTotal) { 
+                log(`<span class="c-magenta">[TERROR] Tira otra vez.</span>`);
+                waitForContinue("Sacudirse el miedo", () => {
+                     let res2 = rollDice(modJefe);
+                     finalizeAttack(res2, difTotal);
+                });
+                return;
+            }
+            finalizeAttack(resultado, difTotal);
+        });
+    }
+
+    function finalizeAttack(resultado, dificultad) {
+        if (resultado >= dificultad) {
+            log(`<span class="c-green">¡RESISTES!</span> Contraatacas.`);
+            state.vidaJefe--;
+            waitForContinue("Continuar", bossTurn);
+        } else {
+            log(`<span class="c-red">TE GOLPEA.</span>`);
+            takeDamage(() => waitForContinue("Levantarse", bossTurn));
+        }
+    }
+
+    function bossDefeated() {
+        state.jefesDerrotados++;
+        log(`<br><span class="c-gold big">¡DESTERRADO!</span>`);
+        waitForContinue("Recuperar Conocimiento", showReward);
+    }
+
+    function showReward() {
+        clearControls();
+        log(`<span class="c-green">--- ZONA SEGURA ---</span>`);
+        const row = document.createElement('div');
+        row.className = 'btn-row';
+        document.getElementById('controls-area').appendChild(row);
+        const btn1 = document.createElement('button');
+        btn1.innerText = "Terapia (+1 Cordura)";
+        btn1.onclick = () => {
+            if (state.vidas >= 2) state.almas.push(NOMBRES_JEFES[state.jefeActual.p][state.jefeActual.v]);
+            else state.vidas++;
+            updateStats();
+            waitForContinue("Continuar Viaje", startLevel);
+        };
+        row.appendChild(btn1);
+        const btn2 = document.createElement('button');
+        btn2.innerText = "Barrera (+1 Protección)";
+        btn2.onclick = () => {
+            state.armadura++;
+            updateStats();
+            waitForContinue("Continuar Viaje", startLevel);
+        };
+        row.appendChild(btn2);
+        const btn3 = document.createElement('button');
+        btn3.innerText = "Guardar Pista";
+        btn3.onclick = () => {
+            state.almas.push(NOMBRES_JEFES[state.jefeActual.p][state.jefeActual.v]);
+            updateStats();
+            waitForContinue("Continuar Viaje", startLevel);
+        };
+        row.appendChild(btn3);
+    }
+
+    function endGame(victory) {
+        clearControls();
+        log('<hr style="border-color: #555; margin: 20px 0;">');
+        if (victory) {
+            log(`<h2 class="c-gold" style="text-align:center;">¡HAS ESCAPADO!</h2>`);
+            if (state.dificultad === 6) {
+                log(`<div class="c-secret" style="text-align:center; margin-top:20px;">HAS MIRADO AL ABISMO... Y HAS SOBREVIVIDO</div>`);
+                log(`<div style="text-align:center;">Dr. Arroyo y Álvarez te observan con interés.</div>`);
+            }
+        } else {
+            log(`<h2 class="c-red" style="text-align:center; font-size: 2rem;">LOCURA TOTAL</h2>`);
+        }
+        const row = document.createElement('div');
+        row.className = 'btn-row';
+        document.getElementById('controls-area').appendChild(row);
+        const btn = document.createElement('button');
+        btn.innerText = "INTENTARLO DE NUEVO";
+        btn.className = "action-btn";
+        btn.onclick = () => restartGame();
+        row.appendChild(btn);
+    }
+
+    initGame();
+</script>
+</body>
+</html>
